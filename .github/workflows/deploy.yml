@@ -68,6 +68,8 @@ jobs:
             -e DB_CREDENTIALS="${{ secrets.DB_CREDENTIALS }}" \
             -e DB_DATABASE="${{ secrets.DB_DATABASE }}" \
             -e HTTP_PORT="${{ vars.HTTP_PORT }}" \
+            -e HLS_BASE_URL="${{ secrets.HLS_BASE_URL }}" \
+            -e RTMP_BASE_URL="${{ secrets.RTMP_BASE_URL }}" \
             -e CONTAINERIZED=true \
             --restart=always \
             --log-driver=awslogs \
