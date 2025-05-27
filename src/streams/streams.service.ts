@@ -37,7 +37,12 @@ export class StreamsService {
   private readonly logger = new Logger(StreamsService.name);
   private readonly hlsDir = path.resolve(__dirname, '../hls');
   private readonly maxStreams = 10;
-  private readonly streamDurationMs = 5 * 60 * 1000;
+
+  /**
+   * The duration for which a stream is valid, set to 2 days (in milliseconds).
+   * After this period, the stream will be considered expired and eligible for cleanup.
+   */
+  private readonly streamDurationMs = 2 * 24 * 60 * 60 * 1000;
 
   /**
    * Constructs a new instance of the StreamsService.
@@ -244,14 +249,13 @@ export class StreamsService {
     }
     const files = fs.readdirSync(this.hlsDir);
     const now = Date.now();
+    const fiveMinutesMs = 5 * 60 * 1000;
     for (const file of files) {
       const filePath = path.join(this.hlsDir, file);
       const stat = fs.statSync(filePath);
 
-      /**
-       * Delete files older than 5 minutes
-       */
-      if (now - stat.mtimeMs > 5 * 60 * 1000) {
+      // Delete files older than 5 minutes
+      if (now - stat.mtimeMs > fiveMinutesMs) {
         fs.unlinkSync(filePath);
       }
     }

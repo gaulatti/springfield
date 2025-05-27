@@ -8,7 +8,6 @@ import {
   Post,
 } from '@nestjs/common';
 import { StartStreamDto } from '../dto/start-stream.dto';
-import { Stream } from '../models/stream.model';
 import { StreamsService } from './streams.service';
 
 /**
@@ -55,7 +54,14 @@ export class StreamsController {
    * @returns {Promise<Stream[]>} A promise that resolves to an array of stream objects.
    */
   @Get()
-  list(): Promise<Stream[]> {
-    return this.streamsService.listStreams();
+  async list(): Promise<
+    Array<{ hlsUrl: string; startTime: Date; expiresAt: Date }>
+  > {
+    const streams = await this.streamsService.listStreams();
+    return streams.map(({ hlsUrl, startTime, expiresAt }) => ({
+      hlsUrl,
+      startTime,
+      expiresAt,
+    }));
   }
 }
