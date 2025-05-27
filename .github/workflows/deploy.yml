@@ -1,0 +1,92 @@
+name: CI and Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npm run test:cov
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/lcov.info
+          fail_ci_if_error: false
+
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        run: |
+          aws ecr get-login-password --region ${{ vars.AWS_REGION }} | \
+          docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
+
+      - name: Build Docker image
+        run: |
+          docker build -t springfield:latest .
+
+      - name: Tag Docker image
+        run: |
+          docker tag springfield:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/springfield:latest
+
+      - name: Push Docker image to ECR
+        run: |
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/springfield:latest
+
+      - name: Deploy to on-premises host
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            sh -c '
+            aws ecr get-login-password --region ${{ vars.AWS_REGION }} | \
+            docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
+            docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/springfield:latest
+
+            docker stop springfield || true
+            docker rm springfield || true
+
+            LOG_STREAM_UUID=$(uuidgen)
+
+            docker run -d --name springfield \
+            --memory=3g \
+            --memory-swap=3g \
+            -p ${{ vars.HTTP_PORT }}:${{ vars.HTTP_PORT }} \
+            -e AWS_REGION=${{ vars.AWS_REGION }} \
+            -e AWS_ACCOUNT_ID=${{ secrets.AWS_ACCOUNT_ID }} \
+            -e DB_CREDENTIALS="${{ secrets.DB_CREDENTIALS }}" \
+            -e DB_DATABASE="${{ secrets.DB_DATABASE }}" \
+            -e HTTP_PORT="${{ vars.HTTP_PORT }}" \
+            -e CONTAINERIZED=true \
+            --restart=always \
+            --log-driver=awslogs \
+            --log-opt awslogs-region=${{ vars.AWS_REGION }} \
+            --log-opt awslogs-group=${{ vars.LOGS_GROUP }} \
+            --log-opt awslogs-stream="$LOG_STREAM_UUID" \
+            -v ~/.aws:/root/.aws:ro \
+            ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com/springfield:latest
+            '
