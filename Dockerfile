@@ -3,9 +3,9 @@ FROM public.ecr.aws/docker/library/node:23
 
 WORKDIR /app
 
-# Install MySQL client for mysqldump and AWS CLI
+# Install MySQL client, FFmpeg, and AWS CLI
 RUN apt-get update && \
-    apt-get install -y default-mysql-client curl unzip && \
+    apt-get install -y default-mysql-client ffmpeg curl unzip && \
     curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
     unzip awscliv2.zip && \
     ./aws/install && \
