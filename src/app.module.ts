@@ -11,6 +11,7 @@ import { AppService } from './app.service';
 import { Stream } from './models/stream.model';
 import { StreamsController } from './streams/streams.controller';
 import { StreamsService } from './streams/streams.service';
+import { TelegramModule } from './telegram/telegram.module';
 
 /**
  * The AWS Secrets Manager client.
@@ -69,6 +70,7 @@ const secretsManager = new SecretsManagerClient();
       inject: [ConfigService],
     }),
     SequelizeModule.forFeature([Stream]),
+    TelegramModule,
   ],
   controllers: [AppController, StreamsController],
   providers: [AppService, StreamsService],
