@@ -1,14 +1,30 @@
+import { Sequelize } from 'sequelize-typescript';
 import { Stream } from 'src/models/stream.model';
 
 describe('Stream Model', () => {
+  const sequelize = new Sequelize({
+    dialect: 'mysql',
+    database: 'springfield_test',
+    username: 'springfield_test',
+    password: 'not-used',
+    logging: false,
+    models: [Stream],
+  });
+
+  afterAll(async () => {
+    await sequelize.close();
+  });
+
   it('should have required fields', () => {
-    const stream = new Stream();
-    stream.uuid = 'uuid';
-    stream.pid = 123;
-    stream.originalUrl = 'url';
-    stream.hlsUrl = 'hls';
-    stream.startTime = new Date();
-    stream.expiresAt = new Date();
+    const stream = Stream.build({
+      uuid: 'uuid',
+      pid: 123,
+      originalUrl: 'url',
+      hlsUrl: 'hls',
+      startTime: new Date(),
+      expiresAt: new Date(),
+    });
+
     expect(stream.uuid).toBe('uuid');
     expect(stream.pid).toBe(123);
     expect(stream.originalUrl).toBe('url');
