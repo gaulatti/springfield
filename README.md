@@ -1,121 +1,43 @@
-# Springfield: A ton of things.
+# Springfield
 
-## What it contains
+> **Disposition: retained recovery owner; production is not verified.**
 
-**StreamsService** manages on-demand HLS repackaging jobs. It orchestrates FFmpeg to repackage incoming live streams (via RTMP) and outputs HLS segments, making them available for HTTP playback. The service is designed for reliability, cross-container compatibility, and operational clarity.
+Springfield is the source owner for the historical Gaulatti stream-repackaging
+and Telegram relay service. The repository is retained because its public
+hostname and source-level consumer contract still exist and no replacement
+implementation was found. Retention is not a claim that the application,
+database, stream pipeline, or relay is currently running.
 
-**Key Features:**
-- On-demand HLS repackaging via FFmpeg and nginx-rtmp
-- Resource management: max 10 concurrent streams, 5-minute TTL
-- Lifecycle management: tracks streams in MySQL, cleans up expired streams/processes/files
-- Robust error handling
-- Cross-container safe: HLS readiness via HTTP polling
+As of 2026-09-07, both `https://springfield.gaulatti.com/` and `/streams`
+return nginx `502 Bad Gateway`. The historical ECR repository and CloudWatch
+log group named by the deployment workflow are absent. Automatic deployment is
+disabled; do not use the historical push-to-main ECR/SSH procedure.
 
----
+See [OWNERSHIP.md](OWNERSHIP.md) for the dated evidence, recovery contract,
+unverified boundaries, and blocked follow-up.
 
-## Deployment
+## Source boundary
 
-### Prerequisites
-- Docker (recommended)
-- MySQL database (see GitHub Actions or your deployment workflow for setup)
-- nginx-rtmp server (for RTMP ingest and HLS output)
-- FFmpeg (installed in the service container)
+The NestJS source contains two related surfaces:
 
-### Environment Variables
-Set the following environment variables:
-- `DB_CREDENTIALS` (AWS Secrets Manager secret for DB connection)
-- `DB_DATABASE` (database name)
-- `RTMP_BASE_URL` (e.g. rtmp://nginx-rtmp/live)
-- `HLS_BASE_URL` (e.g. http://nginx-rtmp/hls)
-- `HLS_OUTPUT_DIR` (e.g. /hls)
-- `HTTP_PORT` (optional, default: 3000)
-- `CONTAINERIZED` (optional, for logging)
+- `StreamsService`, which starts bounded FFmpeg-to-RTMP jobs and records their
+  HLS URLs in MySQL;
+- `TelegramService`, which reads selected Telegram channels and optionally
+  relays or translates messages.
 
-### Docker Deployment
-Build and run the service (adjust env vars as needed):
+These interfaces are recovery evidence only until issue #2 establishes an
+authorized target, dependencies, secrets ownership, authenticated behavior,
+health proof, backup/recovery, and rollback.
 
-```fish
-# Build the Docker image
-docker build -t streams-service .
+## Safe verification
 
-# Run the service (see your GitHub Actions or deployment workflow for MySQL setup)
-docker run -d --name streams-service \
-  -e DB_CREDENTIALS=... -e DB_DATABASE=... \
-  -e RTMP_BASE_URL=rtmp://nginx-rtmp/live \
-  -e HLS_BASE_URL=http://nginx-rtmp/hls \
-  -e HLS_OUTPUT_DIR=/hls \
-  -e HTTP_PORT=3000 \
-  -e CONTAINERIZED=true \
-  --memory=3g \
-  streams-service
+From a clean checkout:
+
+```sh
+npm ci
+npm run build
+npm run test:cov -- --runInBand
 ```
 
-- nginx-rtmp and MySQL must be accessible from the container.
-- Adjust RAM if you change the max concurrent streams (approx. 300MB per stream).
-
----
-
-## API Usage
-
-### Start a Stream
-```bash
-curl -X POST http://localhost:3000/streams \
-  -H "Content-Type: application/json" \
-  -d '{"url": "rtmp://..."}'
-```
-- Returns: `{ uuid, hlsUrl, startedAt, expiresAt }`
-
-### Stop a Stream
-```bash
-curl -X DELETE http://localhost:3000/streams/<uuid>
-```
-
-### List Active Streams
-```bash
-curl -X GET http://localhost:3000/streams
-```
-
----
-
-## Operational Notes
-- Resource limits: Max 10 concurrent streams, 5-minute TTL per stream (configurable)
-- Automatic cleanup: Expired streams, dead FFmpeg processes, and old HLS files are cleaned up automatically
-- Error handling: Invalid input, FFmpeg failures, and process errors are logged and handled
-- RAM sizing: Allocate ~300MB RAM per concurrent stream (3GB for 10 streams)
-- Cross-container: HLS readiness is detected via HTTP polling
-- Production best practices:
-  - Use Docker Compose or Kubernetes for orchestration
-  - Mount HLS output directory as a Docker volume
-  - Monitor logs for FFmpeg errors and resource usage
-
----
-
-## Development & Contribution
-
-### Local Development
-```bash
-npm install
-npm run start:dev
-```
-- Ensure MySQL and nginx-rtmp are running and accessible
-- Set environment variables in a `.env` file or your shell
-
-### Making Changes
-- Business logic: `src/streams/streams.service.ts`
-- Scheduled cleanup: `src/streams/streams.cleanup.task.ts` (centralized in `cleanupAll()`)
-- Models: `src/models/stream.model.ts`
-- DTOs: `src/dto/`
-- Utilities: `src/utils/`
-
-### Testing
-```bash
-npm run test
-npm run test:e2e
-```
-
----
-
-## Troubleshooting & FAQ
-- Stream not starting? Check FFmpeg logs and ensure RTMP/HLS endpoints are reachable
-- HLS not available? Ensure nginx-rtmp is running and HLS output directory is mounted
-- Too many streams? The service enforces a hard limit; wait for cleanup or stop unused streams
+Pull requests run those checks in CI. They do not build or publish an image,
+contact live Telegram/Gemini accounts, mutate a database, or deploy a service.
