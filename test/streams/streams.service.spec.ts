@@ -64,7 +64,7 @@ describe('StreamsService', () => {
   describe('cleanupExpiredStreams', () => {
     it('should cleanup expired streams', async () => {
       streamModel.findAll.mockResolvedValue([{ pid: 1, uuid: 'u', destroy: jest.fn() }]);
-      jest.spyOn(process, 'kill').mockImplementation(() => undefined);
+      jest.spyOn(process, 'kill').mockImplementation(() => true);
       jest.spyOn(service as any, 'deleteHlsFiles').mockImplementation(() => undefined);
       await service.cleanupExpiredStreams();
       expect(streamModel.findAll).toHaveBeenCalled();
@@ -81,7 +81,7 @@ describe('StreamsService', () => {
 
   describe('isPidAlive', () => {
     it('should return true for alive pid', () => {
-      jest.spyOn(process, 'kill').mockImplementation(() => undefined);
+      jest.spyOn(process, 'kill').mockImplementation(() => true);
       expect((service as any).isPidAlive(1)).toBe(true);
     });
     it('should return false for dead pid', () => {
