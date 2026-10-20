@@ -7,14 +7,19 @@ Audited default branch: `main` at
 
 ## Decision
 
+The external API, AWS, DNS, HTTP, TLS, package and consumer observations below
+are unverified September reports: original command receipts were not retained.
+They establish neither current ownership, existence, absence nor health. The
+source-retention decision preserves recovery while those facts are unknown.
+Current source/CI observations are recorded separately.
+
 **Retained owner — recovery and maintenance source only.**
 
 `gaulatti/springfield` remains the canonical source for the historical public
 Springfield stream API and its co-located Telegram relay because the hostname,
 certificate, monitoring target, and a source-level client reference still
-exist, while portfolio searches found no replacement backend. The public
-reverse proxy currently returns 502, and the audited cloud/artifact surfaces do
-not prove a running service. This decision therefore preserves a recovery path;
+exist, while portfolio searches found no replacement backend. The September notes report a 502 reverse-proxy response, and those unretained
+cloud/artifact reports do not prove a currently running service. This decision therefore preserves a recovery path;
 it does not authorize deployment or claim product health.
 
 Archival is unsafe while the DNS route, repository credentials, monitoring
@@ -33,7 +38,7 @@ unsupported because no canonical replacement was found.
 | Historical artifact target | AWS ECR repository `springfield`; it is absent in `us-east-1` as of the audit |
 | Secrets owner | Repository Actions references 18 secret names; database credentials were expected in AWS Secrets Manager. Values, current ownership, rotation, and recoverability were not inspected or verified. |
 | Release/deploy command | None is currently authorized. The former push-to-main ECR build and SSH replacement procedure is quarantined. Issue #2 must define an immutable, reviewed manual release before any deployment. |
-| Current health proof | Negative: read-only GETs to `/` and `/streams` both return nginx 502. No application, database, FFmpeg/RTMP-to-HLS, Telegram, or restart health is proven. |
+| Historical health report | Unretained September GETs to `/` and `/streams` reportedly returned nginx 502. No application, database, FFmpeg/RTMP-to-HLS, Telegram, or restart health is proven. |
 | Rollback | No usable prior digest or rollback target was found. Recovery must retain an immutable prior artifact and exercise rollback before production use. |
 | Next work | Issue #2, **Restore and prove the retained Springfield delivery contract**, is a child of issue #1 and is Blocked pending target, dependency/data, and credential ownership inventory. |
 
@@ -84,7 +89,7 @@ database recovery, service/host restart, monitoring, and the public TLS route.
 Rollback requires preserving the previously proven immutable artifact and
 database recovery point, switching the target back without mutable tags, and
 repeating the public health and synthetic stream checks. Because no prior image
-or recovery point was found, the current state has no verified rollback.
+or recovery point was found, the current review has no verified rollback.
 
 ## Residual unknowns and boundaries
 

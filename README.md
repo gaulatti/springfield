@@ -8,9 +8,10 @@ hostname and source-level consumer contract still exist and no replacement
 implementation was found. Retention is not a claim that the application,
 database, stream pipeline, or relay is currently running.
 
-As of 2026-09-07, both `https://springfield.gaulatti.com/` and `/streams`
-return nginx `502 Bad Gateway`. The historical ECR repository and CloudWatch
-log group named by the deployment workflow are absent. Automatic deployment is
+The unretained September 7 notes report that both `https://springfield.gaulatti.com/` and `/streams`
+returned nginx `502 Bad Gateway`. The historical ECR repository and CloudWatch
+log group were reported absent; neither report is current runtime or absence
+proof. Original external audit receipts are unavailable. Automatic deployment is
 disabled; do not use the historical push-to-main ECR/SSH procedure.
 
 See [OWNERSHIP.md](OWNERSHIP.md) for the dated evidence, recovery contract,
